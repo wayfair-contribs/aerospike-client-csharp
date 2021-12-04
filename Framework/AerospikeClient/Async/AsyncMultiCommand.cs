@@ -97,26 +97,17 @@ namespace Aerospike.Client
 				dataOffset += 2;
 				resultCode = dataBuffer[dataOffset];
 
-				if (resultCode != 0)
-				{
-					if (resultCode == ResultCode.KEY_NOT_FOUND_ERROR || resultCode == ResultCode.FILTERED_OUT)
-					{
-						if (!isBatch)
-						{
-							return true;
-						}
-					}
-					else
-					{
-						throw new AerospikeException(resultCode);
-					}
-				}
-
-				// If this is the end marker of the response, do not proceed further
+				// If this is the end marker of the response, do not proceed further.
 				if ((info3 & Command.INFO3_LAST) != 0)
 				{
+					if (resultCode != 0)
+					{
+						// The server returned a fatal error.
+						throw new AerospikeException(resultCode);
+					}
 					return true;
 				}
+
 				dataOffset++;
 				generation = ByteUtil.BytesToInt(dataBuffer, dataOffset);
 				dataOffset += 4;
@@ -136,13 +127,18 @@ namespace Aerospike.Client
 
 				if (isBatch)
 				{
+					// Batch row parse methods check resultCode, so no need to check here.
 					SkipKey(fieldCount);
 					ParseRow(null);
 				}
 				else
 				{
-					Key key = ParseKey(fieldCount);
-					ParseRow(key);
+					// Scan/Query row parse methods assume resultCode is valid, so check here.
+					if (resultCode == 0)
+					{
+						Key key = ParseKey(fieldCount);
+						ParseRow(key);
+					}
 				}
 			}
 			return false;
