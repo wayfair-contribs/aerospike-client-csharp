@@ -223,18 +223,13 @@ namespace Aerospike.Client
 
 				if (isBatch)
 				{
-					// Batch row parse methods check resultCode, so no need to check here.
 					SkipKey(fieldCount);
 					ParseRow(null);
 				}
 				else
 				{
-					// Scan/Query row parse methods assume resultCode is valid, so check here.
-					if (resultCode == 0)
-					{
-						Key key = ParseKey(fieldCount);
-						ParseRow(key);
-					}
+					Key key = ParseKey(fieldCount);
+					ParseRow(key);
 				}
 			}
 			return true;
